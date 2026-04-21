@@ -24,6 +24,13 @@
 <p style="font-size: 0.9em; color: #555;">
 Tip: In Google Maps, right-click a location and select “What’s here?” — the decimal coordinates appear at the bottom.
 </p>
+<!-- Interactive Map -->
+<div id="map" style="height: 400px; margin-top: 10px;"></div>
+
+<!-- Lake Name Field -->
+<label>Lake Name:</label>
+<input type="text" name="lake_name" placeholder="e.g., Silver Lake">
+
 
 <label>Species:</label>
 <select name="species" required>
@@ -48,6 +55,25 @@ Tip: In Google Maps, right-click a location and select “What’s here?” — 
     </form>
     <div id="result"></div>
 
+<!-- Leaflet Map Script -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  const map = L.map('map').setView([48.1101, -122.3389], 7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  let marker;
+  map.on('click', function(e) {
+    const { lat, lng } = e.latlng;
+    document.querySelector('[name="lat"]').value = lat.toFixed(4);
+    document.querySelector('[name="lon"]').value = lng.toFixed(4);
+    if (marker) map.removeLayer(marker);
+    marker = L.marker([lat, lng]).addTo(map);
+  });
+</script>
+    
 <script>
   document.getElementById("forecastForm").addEventListener("submit", async (e) => {
     e.preventDefault(); // stop page reload
