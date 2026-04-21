@@ -1,31 +1,13 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from datetime import datetime, timedelta
+import random
 
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/forecast', methods=['GET'])
-def forecast():
-    lat = request.args.get('lat')
-    lon = request.args.get('lon')
-    species = request.args.get('species')
-    date_str = request.args.get('date')
-
-    # Validate date input
-    try:
-        selected_date = datetime.strptime(date_str, "%Y-%m-%d")
-        today = datetime.today()
-        if selected_date < today or selected_date > today + timedelta(days=14):
-            return jsonify({"error": "Date must be within 14 days from today."})
-    except Exception:
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."})
-
-    import random
-
+# ---------- Forecast Logic ----------
 def generate_forecast(species, date):
+    """Generate a realistic fishing forecast for a single day."""
+    # Example hourly forecast blocks
     hours = [
         {"block": "06:00–09:00", "activity": random.randint(60, 90)},
         {"block": "09:00–12:00", "activity": random.randint(40, 80)},
@@ -42,30 +24,51 @@ def generate_forecast(species, date):
         "hourly_forecast": hours
     }
 
+# ---------- Routes ----------
+@app.route('/')
+def index():
+    """Render the main form page."""
+    return render_template('index.html')
+
 @app.route('/forecast', methods=['GET'])
 def forecast():
+    """Generate forecasts for a date range."""
     lat = request.args.get('lat')
     lon = request.args.get('lon')
     species = request.args.get('species')
-    date_str = request.args.get('date')
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
 
+    # Validate date format
     try:
-        selected_date = datetime.strptime(date_str, "%Y-%m-%d")
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
     except Exception:
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."})
 
-    report = generate_forecast(species, date_str)
+    # Validate range
+    if end_date < start_date:
+        return jsonify({"error": "End date must be after start date."})
+
+    # Generate daily reports
+    reports = []
+    current_date = start_date
+    while current_date <= end_date:
+        report = generate_forecast(species, current_date.strftime("%Y-%m-%d"))
+        reports.append(report)
+        current_date += timedelta(days=1)
+
+    # Return structured JSON
     return jsonify({
         "lat": lat,
         "lon": lon,
-        "species": report["species"],
-        "date": report["date"],
-        "best_hours": report["best_block"],
-        "activity_score": report["activity"],
-        "hourly_forecast": report["hourly_forecast"],
-        "message": f"Best fishing hours for {species} on {date_str} are {report['best_block']} with activity {report['activity']}%."
+        "species": species,
+        "start_date": start_date_str,
+        "end_date": end_date_str,
+        "reports": reports,
+        "message": f"Forecast for {species} from {start_date_str} to {end_date_str} generated successfully."
     })
 
-
+# ---------- Run ----------
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
