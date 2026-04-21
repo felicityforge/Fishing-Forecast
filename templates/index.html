@@ -24,10 +24,9 @@
 <p style="font-size: 0.9em; color: #555;">
 Click the map to automatically fill in coordinates, or enter your own (format: 48.1234, -122.5678).
 </p>
-<!-- Interactive Map -->
+
 <div id="map" style="height: 400px; margin-top: 10px;"></div>
 
-<!-- Lake Name Field -->
 <label>Lake Name:</label>
 <input type="text" name="lake_name" placeholder="e.g., Silver Lake">
 
@@ -43,19 +42,16 @@ Click the map to automatically fill in coordinates, or enter your own (format: 4
   <option value="Carp">Carp</option>
 </select>
 
-
         <label>Start Date:</label>
         <input type="date" name="start_date" required>
 
         <label>End Date:</label>
         <input type="date" name="end_date" required>
 
-
         <button type="submit">Get Forecast</button>
     </form>
     <div id="result"></div>
 
-<!-- Leaflet Map Script -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
