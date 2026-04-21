@@ -16,19 +16,43 @@
 <body>
     <h1>Fishing Forecast</h1>
     <form action="/forecast" method="get">
-        <label>Latitude:</label>
-        <input type="text" name="lat" required>
+        <label>Latitude (decimal degrees, e.g. 48.1101):</label>
+<input type="text" name="lat" required>
 
-        <label>Longitude:</label>
-        <input type="text" name="lon" required>
+<label>Longitude (decimal degrees, e.g. -122.3389):</label>
+<input type="text" name="lon" required>
+<p style="font-size: 0.9em; color: #555;">
+Tip: In Google Maps, right-click a location and select “What’s here?” — the decimal coordinates appear at the bottom.
+</p>
 
-        <label>Species:</label>
-        <input type="text" name="species" required>
+<label>Species:</label>
+<select name="species" required>
+  <option value="">Select species</option>
+  <option value="Trout">Trout</option>
+  <option value="Bass">Bass</option>
+  <option value="Salmon">Salmon</option>
+  <option value="Catfish">Catfish</option>
+  <option value="Pike">Pike</option>
+  <option value="Carp">Carp</option>
+</select>
+
 
         <label>Date (YYYY-MM-DD):</label>
         <input type="text" name="date" required>
 
         <button type="submit">Get Forecast</button>
     </form>
+    <div id="result"></div>
+
+<script>
+document.querySelector("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const params = new URLSearchParams(new FormData(e.target));
+    const response = await fetch("/forecast?" + params.toString());
+    const data = await response.json();
+    document.getElementById("result").innerHTML = data.message || data.error;
+});
+</script>
+
 </body>
 </html>
