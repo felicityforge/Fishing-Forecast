@@ -37,22 +37,48 @@ Tip: In Google Maps, right-click a location and select “What’s here?” — 
 </select>
 
 
-        <label>Date (YYYY-MM-DD):</label>
-        <input type="text" name="date" required>
+        <label>Start Date:</label>
+        <input type="date" name="start_date" required>
+
+        <label>End Date:</label>
+        <input type="date" name="end_date" required>
+
 
         <button type="submit">Get Forecast</button>
     </form>
     <div id="result"></div>
 
 <script>
-document.getElementById("forecastForm").addEventListener("submit", async (e) => {
+  document.getElementById("forecastForm").addEventListener("submit", async (e) => {
     e.preventDefault(); // stop page reload
     const params = new URLSearchParams(new FormData(e.target));
     const response = await fetch("/forecast?" + params.toString());
     const data = await response.json();
-    document.getElementById("result").innerHTML = data.message || data.error;
-});
 
+    if (data.error) {
+      document.getElementById("result").innerHTML = `<p style="color:red;">${data.error}</p>`;
+      return;
+    }
+
+    let html = `<h3>${data.message}</h3>`;
+    html += `<table border="1" cellpadding="6" style="border-collapse: collapse; margin-top: 10px;">
+              <tr style="background-color:#004080; color:white;">
+                <th>Date</th>
+                <th>Best Hours</th>
+                <th>Activity Score</th>
+              </tr>`;
+
+    data.reports.forEach(day => {
+      html += `<tr>
+                <td>${day.date}</td>
+                <td>${day.best_block}</td>
+                <td>${day.activity}%</td>
+              </tr>`;
+    });
+
+    html += `</table>`;
+    document.getElementById("result").innerHTML = html;
+  });
 </script>
 
 </body>
