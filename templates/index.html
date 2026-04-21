@@ -65,11 +65,6 @@ Click the map to automatically fill in coordinates, or enter your own (format: 4
   }).addTo(map);
 
   let marker;
-  map.on('click', function(e) {
-    const { lat, lng } = e.latlng;
-    document.querySelector('[name="lat"]').value = lat.toFixed(4);
-    document.querySelector('[name="lon"]').value = lng.toFixed(4);
-    if (marker) map.removeLayer(marker);
     marker = L.marker([lat, lng]).addTo(map);
   });
 </script>
