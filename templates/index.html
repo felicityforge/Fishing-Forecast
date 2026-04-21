@@ -15,7 +15,7 @@
 </head>
 <body>
     <h1>Fishing Forecast</h1>
-    <form action="/forecast" method="get">
+    <form id="forecastForm" action="/forecast" method="get">
         <label>Latitude (decimal degrees, e.g. 48.1101):</label>
 <input type="text" name="lat" required>
 
@@ -45,13 +45,14 @@ Tip: In Google Maps, right-click a location and select “What’s here?” — 
     <div id="result"></div>
 
 <script>
-document.querySelector("form").addEventListener("submit", async (e) => {
-    e.preventDefault();
+document.getElementById("forecastForm").addEventListener("submit", async (e) => {
+    e.preventDefault(); // stop page reload
     const params = new URLSearchParams(new FormData(e.target));
     const response = await fetch("/forecast?" + params.toString());
     const data = await response.json();
     document.getElementById("result").innerHTML = data.message || data.error;
 });
+
 </script>
 
 </body>
