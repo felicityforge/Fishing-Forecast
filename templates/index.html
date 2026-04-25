@@ -15,32 +15,33 @@
 </head>
 <body>
     <h1>Fishing Forecast</h1>
+
     <form id="forecastForm" action="/forecast" method="get">
         <label>Latitude (decimal degrees, e.g. 48.1101):</label>
-<input type="text" name="lat" required>
+        <input type="text" name="lat" required>
 
-<label>Longitude (decimal degrees, e.g. -122.3389):</label>
-<input type="text" name="lon" required>
-<p style="font-size: 0.9em; color: #555;">
-Click the map to automatically fill in coordinates, or enter your own (format: 48.1234, -122.5678).
-</p>
+        <label>Longitude (decimal degrees, e.g. -122.3389):</label>
+        <input type="text" name="lon" required>
 
-<div id="map" style="height: 400px; margin-top: 10px;"></div>
+        <p style="font-size: 0.9em; color: #555;">
+            Click the map to automatically fill in coordinates, or enter your own (format: 48.1234, -122.5678).
+        </p>
 
-<label>Lake Name:</label>
-<input type="text" name="lake_name" placeholder="e.g., Silver Lake">
+        <div id="map" style="height: 400px; margin-top: 10px;"></div>
 
+        <label>Lake Name:</label>
+        <input type="text" name="lake_name" placeholder="e.g., Silver Lake">
 
-<label>Species:</label>
-<select name="species" required>
-  <option value="">Select species</option>
-  <option value="Trout">Trout</option>
-  <option value="Bass">Bass</option>
-  <option value="Salmon">Salmon</option>
-  <option value="Catfish">Catfish</option>
-  <option value="Pike">Pike</option>
-  <option value="Carp">Carp</option>
-</select>
+        <label>Species:</label>
+        <select name="species" required>
+            <option value="">Select species</option>
+            <option value="Trout">Trout</option>
+            <option value="Bass">Bass</option>
+            <option value="Salmon">Salmon</option>
+            <option value="Catfish">Catfish</option>
+            <option value="Pike">Pike</option>
+            <option value="Carp">Carp</option>
+        </select>
 
         <label>Start Date:</label>
         <input type="date" name="start_date" required>
@@ -50,133 +51,110 @@ Click the map to automatically fill in coordinates, or enter your own (format: 4
 
         <button type="submit">Get Forecast</button>
     </form>
+
     <div id="result"></div>
 
-<!-- Leaflet Map Script -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Leaflet Map Script -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<script>
-  const map = L.map('map').setView([48.1101, -122.3389], 7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(map);
+    <!-- MAP CLICK HANDLER (CLEAN + OVERPASS) -->
+    <script>
+      const map = L.map('map').setView([48.1101, -122.3389], 7);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
 
-  let marker;
+      let marker;
 
-  map.on('click', async function(e) {
-    const { lat, lng } = e.latlng;
+      map.on('click', async function(e) {
+        const { lat, lng } = e.latlng;
 
-    // Fill coordinates
-    document.querySelector('[name="lat"]').value = lat.toFixed(4);
-    document.querySelector('[name="lon"]').value = lng.toFixed(4);
+        // Fill coordinates
+        document.querySelector('[name="lat"]').value = lat.toFixed(4);
+        document.querySelector('[name="lon"]').value = lng.toFixed(4);
 
-    // Auto-name the lake
-    const lakeNameInput = document.querySelector('[name="lake_name"]');
-    lakeNameInput.value = "Searching…";
+        // Auto-name the lake
+        const lakeNameInput = document.querySelector('[name="lake_name"]');
+        lakeNameInput.value = "Searching…";
 
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`
-      );
-      const data = await response.json();
+        let lakeName = null;
 
-      let lakeName = null;
+        try {
+          const overpassQuery = `
+            [out:json];
+            (
+              way["natural"="water"](around:500, ${lat}, ${lng});
+              relation["natural"="water"](around:500, ${lat}, ${lng});
+              way["water"="lake"](around:500, ${lat}, ${lng});
+              relation["water"="lake"](around:500, ${lat}, ${lng});
+            );
+            out tags center;
+          `;
 
-// 1. Try the main "name" field (most reliable)
-if (data && data.name) {
-  lakeName = data.name;
-}
+          const overpassResponse = await fetch("https://overpass-api.de/api/interpreter", {
+            method: "POST",
+            body: overpassQuery
+          });
 
-// 2. Try waterbody-specific fields
-if (!lakeName && data && data.address) {
-  lakeName =
-    data.address.lake ||
-    data.address.water ||
-    data.address.reservoir ||
-    data.address.pond ||
-    data.address.river ||
-    data.address.stream ||
-    null;
-}
+          const overpassData = await overpassResponse.json();
 
-      lakeNameInput.value = lakeName
-        ? lakeName
-        : `Unnamed waterbody at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    } catch {
-      lakeNameInput.value = `Unnamed waterbody at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    }
+          if (overpassData.elements && overpassData.elements.length > 0) {
+            const tags = overpassData.elements[0].tags;
+            if (tags && tags.name) {
+              lakeName = tags.name;
+            }
+          }
+        } catch (err) {
+          console.error("Overpass error:", err);
+        }
 
-    // Update marker
-    if (marker) map.removeLayer(marker);
-    marker = L.marker([lat, lng]).addTo(map);
-  });
-</script>
-    
-<script>
-  document.getElementById("forecastForm").addEventListener("submit", async (e) => {
-    e.preventDefault(); // stop page reload
-    const params = new URLSearchParams(new FormData(e.target));
-    // Try reverse first, then fallback to nearby search
-let lakeName = null;
-try {
-  // Reverse lookup
-  let lakeName = null;
+        // Fallback
+        lakeNameInput.value = lakeName
+          ? lakeName
+          : `Unnamed waterbody at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-try {
-  const overpassQuery = `
-    [out:json];
-    (
-      way["natural"="water"](around:500, ${lat}, ${lng});
-      relation["natural"="water"](around:500, ${lat}, ${lng});
-      way["water"="lake"](around:500, ${lat}, ${lng});
-      relation["water"="lake"](around:500, ${lat}, ${lng});
-    );
-    out tags center;
-  `;
+        // Update marker
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng]).addTo(map);
+      });
+    </script>
 
-  const overpassResponse = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    body: overpassQuery
-  });
+    <!-- FORECAST SCRIPT (CLEAN + FIXED) -->
+    <script>
+      document.getElementById("forecastForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-  const overpassData = await overpassResponse.json();
+        const params = new URLSearchParams(new FormData(e.target));
+        const response = await fetch("/forecast?" + params.toString());
+        const data = await response.json();
 
-  if (overpassData.elements && overpassData.elements.length > 0) {
-    const tags = overpassData.elements[0].tags;
-    if (tags && tags.name) {
-      lakeName = tags.name;
-    }
-  }
-} catch (err) {
-  console.error("Overpass error:", err);
-}
+        if (data.error) {
+          document.getElementById("result").innerHTML =
+            `<p style="color:red;">${data.error}</p>`;
+          return;
+        }
 
-// Fallback
-lakeNameInput.value = lakeName
-  ? lakeName
-  : `Unnamed waterbody at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        let html = `<h3>${data.message}</h3>`;
+        html += `<table border="1" cellpadding="6" style="border-collapse: collapse; margin-top: 10px;">
+                  <tr style="background-color:#004080; color:white;">
+                    <th>Date</th>
+                    <th>Best Hours</th>
+                    <th>Activity Score</th>
+                  </tr>`;
 
+        data.reports.forEach(day => {
+          html += `<tr>
+                    <td>${day.date}</td>
+                    <td>${day.best_block}</td>
+                    <td>${day.activity}%</td>
+                  </tr>`;
+        });
 
-    let html = `<h3>${data.message}</h3>`;
-    html += `<table border="1" cellpadding="6" style="border-collapse: collapse; margin-top: 10px;">
-              <tr style="background-color:#004080; color:white;">
-                <th>Date</th>
-                <th>Best Hours</th>
-                <th>Activity Score</th>
-              </tr>`;
+        html += `</table>`;
+        document.getElementById("result").innerHTML = html;
+      });
+    </script>
 
-    data.reports.forEach(day => {
-      html += `<tr>
-                <td>${day.date}</td>
-                <td>${day.best_block}</td>
-                <td>${day.activity}%</td>
-              </tr>`;
-    });
-
-    html += `</table>`;
-    document.getElementById("result").innerHTML = html;
-  });
-</script>
 </body>
 </html>
