@@ -58,7 +58,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-    <!-- MAP CLICK HANDLER (CLEAN + OVERPASS) -->
+    <!-- MAP CLICK HANDLER WITH EXPANDED OVERPASS QUERY -->
     <script>
       const map = L.map('map').setView([48.1101, -122.3389], 7);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -84,10 +84,16 @@
           const overpassQuery = `
             [out:json];
             (
-              way["natural"="water"](around:500, ${lat}, ${lng});
-              relation["natural"="water"](around:500, ${lat}, ${lng});
-              way["water"="lake"](around:500, ${lat}, ${lng});
-              relation["water"="lake"](around:500, ${lat}, ${lng});
+              way["natural"="water"](around:800, ${lat}, ${lng});
+              relation["natural"="water"](around:800, ${lat}, ${lng});
+              way["water"="lake"](around:800, ${lat}, ${lng});
+              relation["water"="lake"](around:800, ${lat}, ${lng});
+              way["water"="reservoir"](around:800, ${lat}, ${lng});
+              relation["water"="reservoir"](around:800, ${lat}, ${lng});
+              way["landuse"="reservoir"](around:800, ${lat}, ${lng});
+              relation["landuse"="reservoir"](around:800, ${lat}, ${lng});
+              node["place"="locality"](around:800, ${lat}, ${lng});
+              node["natural"="water"](around:800, ${lat}, ${lng});
             );
             out tags center;
           `;
@@ -97,64 +103,3 @@
             body: overpassQuery
           });
 
-          const overpassData = await overpassResponse.json();
-
-          if (overpassData.elements && overpassData.elements.length > 0) {
-            const tags = overpassData.elements[0].tags;
-            if (tags && tags.name) {
-              lakeName = tags.name;
-            }
-          }
-        } catch (err) {
-          console.error("Overpass error:", err);
-        }
-
-        // Fallback
-        lakeNameInput.value = lakeName
-          ? lakeName
-          : `Unnamed waterbody at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-
-        // Update marker
-        if (marker) map.removeLayer(marker);
-        marker = L.marker([lat, lng]).addTo(map);
-      });
-    </script>
-
-    <!-- FORECAST SCRIPT (CLEAN + FIXED) -->
-    <script>
-      document.getElementById("forecastForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const params = new URLSearchParams(new FormData(e.target));
-        const response = await fetch("/forecast?" + params.toString());
-        const data = await response.json();
-
-        if (data.error) {
-          document.getElementById("result").innerHTML =
-            `<p style="color:red;">${data.error}</p>`;
-          return;
-        }
-
-        let html = `<h3>${data.message}</h3>`;
-        html += `<table border="1" cellpadding="6" style="border-collapse: collapse; margin-top: 10px;">
-                  <tr style="background-color:#004080; color:white;">
-                    <th>Date</th>
-                    <th>Best Hours</th>
-                    <th>Activity Score</th>
-                  </tr>`;
-
-        data.reports.forEach(day => {
-          html += `<tr>
-                    <td>${day.date}</td>
-                    <td>${day.best_block}</td>
-                    <td>${day.activity}%</td>
-                  </tr>`;
-        });
-
-        html += `</table>`;
-        document.getElementById("result").innerHTML = html;
-      });
-    </script>
-
-</body>
-</html>
