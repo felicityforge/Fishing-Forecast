@@ -1,89 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Fishing Forecast</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 40px; 
-            background-color: #f0f8ff; 
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #eef6ff;
+            color: #003366;
         }
-        h1 { 
-            color: #004080; 
-            margin-bottom: 5px;
-        }
-        .subtitle {
-            color: #333;
-            margin-top: 0;
-            font-size: 0.95em;
-        }
-        form { 
-            margin-top: 20px; 
-            background: #ffffff;
+
+        header {
+            background: #003366;
+            color: white;
             padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 25px;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         }
-        label { 
-            display: block; 
-            margin: 10px 0 5px; 
+
+        .section h2 {
+            margin-top: 0;
+            color: #003366;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
             font-weight: bold;
         }
-        input, select { 
-            padding: 6px; 
-            width: 260px; 
-            border: 1px solid #aaa;
+
+        input, select {
+            width: 260px;
+            padding: 7px;
+            margin-top: 4px;
+            border: 1px solid #999;
             border-radius: 4px;
         }
-        button { 
-            margin-top: 15px; 
-            padding: 10px 18px; 
-            background-color: #004080; 
-            color: white; 
-            border: none; 
-            cursor: pointer; 
+
+        button {
+            margin-top: 18px;
+            padding: 10px 18px;
+            background: #003366;
+            color: white;
+            border: none;
             border-radius: 4px;
-            font-size: 1em;
+            cursor: pointer;
+            font-size: 1rem;
         }
-        button:hover { 
-            background-color: #0066cc; 
+
+        button:hover {
+            background: #0055aa;
         }
+
+        #map {
+            height: 400px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
         #loading {
             display: none;
             margin-top: 10px;
-            color: #004080;
+            font-weight: bold;
+            color: #003366;
+        }
+
+        .day-block {
+            margin-top: 15px;
+            border: 1px solid #aac;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .day-header {
+            background: #003366;
+            color: white;
+            padding: 10px;
+            cursor: pointer;
             font-weight: bold;
         }
-        #result {
-            margin-top: 25px;
+
+        .day-content {
+            display: none;
+            padding: 10px;
+            background: #f7fbff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        th, td {
+            padding: 6px;
+            border: 1px solid #aac;
+            text-align: center;
+        }
+
+        th {
+            background: #003366;
+            color: white;
         }
     </style>
 </head>
+
 <body>
 
+<header>
     <h1>Fishing Forecast</h1>
-    <p class="subtitle">Click a lake on the map or enter coordinates manually.</p>
+</header>
 
-    <form id="forecastForm" action="/forecast" method="get">
+<div class="container">
 
-        <label>Latitude:</label>
-        <input type="text" name="lat" required>
-
-        <label>Longitude:</label>
-        <input type="text" name="lon" required>
-
-        <p style="font-size: 0.9em; color: #555;">
-            Click the map to automatically fill in coordinates.
-        </p>
-
-        <div id="map" style="height: 400px; margin-top: 10px; border-radius: 6px; overflow: hidden;"></div>
+    <!-- ========================= -->
+    <!--   LAKE SEARCH SECTION     -->
+    <!-- ========================= -->
+    <div class="section">
+        <h2>Search Lake by Name</h2>
 
         <label>Lake Name:</label>
-        <input type="text" name="lake_name" placeholder="e.g., Lake Erie">
+        <input type="text" id="searchLakeName" placeholder="e.g., Bear Lake" />
+
+        <label>County (optional):</label>
+        <input type="text" id="searchCounty" placeholder="e.g., Rich County" />
+
+        <label>State (optional):</label>
+        <input type="text" id="searchState" placeholder="e.g., Utah" />
+
+        <button id="searchLakeBtn">Search Lake</button>
+
+        <p id="lakeSearchStatus" style="margin-top:10px; font-weight:bold;"></p>
+    </div>
+
+    <!-- ========================= -->
+    <!--   MAP CLICK SECTION       -->
+    <!-- ========================= -->
+    <div class="section">
+        <h2>Click Map or Enter Coordinates</h2>
+
+        <label>Latitude:</label>
+        <input type="text" id="latInput" placeholder="e.g., 48.1101" />
+
+        <label>Longitude:</label>
+        <input type="text" id="lonInput" placeholder="e.g., -122.3389" />
+
+        <div id="map"></div>
+    </div>
+
+    <!-- ========================= -->
+    <!--   SPECIES + DATES         -->
+    <!-- ========================= -->
+    <div class="section">
+        <h2>Fishing Details</h2>
 
         <label>Species:</label>
-        <select name="species" required>
+        <select id="speciesSelect">
             <option value="">Select species</option>
 
             <!-- Bass -->
@@ -138,137 +233,450 @@
         </select>
 
         <label>Start Date:</label>
-        <input type="date" name="start_date" required>
+        <input type="date" id="startDate" />
 
         <label>End Date:</label>
-        <input type="date" name="end_date" required>
+        <input type="date" id="endDate" />
 
-        <button type="submit">Get Forecast</button>
+        <button id="forecastBtn">Get Forecast</button>
 
         <div id="loading">Loading forecast…</div>
-    </form>
+    </div>
 
-    <div id="result"></div>
+    <!-- ========================= -->
+    <!--   FORECAST OUTPUT         -->
+    <!-- ========================= -->
+    <div class="section">
+        <h2>Forecast Results</h2>
+        <div id="forecastOutput"></div>
+    </div>
 
-    <!-- Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</div>
+<!-- ========================= -->
+<!--   JAVASCRIPT SECTION     -->
+<!-- ========================= -->
 
-    <!-- MAP CLICK HANDLER WITH EXPANDED OVERPASS QUERY -->
-    <script>
-      const map = L.map('map').setView([48.1101, -122.3389], 7);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-      let marker;
+<script>
+/* ============================================================
+   GLOBAL STATE
+   ============================================================ */
+let map;
+let marker = null;
+let lakeTimezone = null;   // Filled after lake search or map click
+let lakeNameResolved = ""; // Optional lake name from search
 
-      map.on('click', async function(e) {
-        const { lat, lng } = e.latlng;
+/* ============================================================
+   INITIALIZE MAP
+   ============================================================ */
+document.addEventListener("DOMContentLoaded", () => {
+    map = L.map("map").setView([47.5, -120.5], 6);
 
-        document.querySelector('[name="lat"]').value = lat.toFixed(4);
-        document.querySelector('[name="lon"]').value = lng.toFixed(4);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors"
+    }).addTo(map);
 
-        const lakeNameInput = document.querySelector('[name="lake_name"]');
-        lakeNameInput.value = "Searching…";
+    map.on("click", onMapClick);
+});
 
-        let lakeName = null;
+/* ============================================================
+   MAP CLICK HANDLER
+   ============================================================ */
+async function onMapClick(e) {
+    const lat = e.latlng.lat.toFixed(6);
+    const lon = e.latlng.lng.toFixed(6);
 
-        try {
-          const overpassQuery = `
-            [out:json];
-            (
-              way["natural"="water"](around:800, ${lat}, ${lng});
-              relation["natural"="water"](around:800, ${lat}, ${lng});
-              way["water"="lake"](around:800, ${lat}, ${lng});
-              relation["water"="lake"](around:800, ${lat}, ${lng});
-              way["water"="reservoir"](around:800, ${lat}, ${lng});
-              relation["water"="reservoir"](around:800, ${lat}, ${lng});
-              way["landuse"="reservoir"](around:800, ${lat}, ${lng});
-              relation["landuse"="reservoir"](around:800, ${lat}, ${lng});
-              node["place"="locality"](around:800, ${lat}, ${lng});
-              node["natural"="water"](around:800, ${lat}, ${lng});
-            );
-            out tags center;
-          `;
+    document.getElementById("latInput").value = lat;
+    document.getElementById("lonInput").value = lon;
 
-          const overpassResponse = await fetch("https://overpass-api.de/api/interpreter", {
+    lakeNameResolved = ""; // Reset lake name on manual click
+
+    placeMarker(lat, lon);
+
+    // Fetch timezone for clicked location
+    lakeTimezone = await fetchTimezone(lat, lon);
+}
+
+/* ============================================================
+   PLACE MARKER
+   ============================================================ */
+function placeMarker(lat, lon) {
+    if (marker) map.removeLayer(marker);
+    marker = L.marker([lat, lon]).addTo(map);
+}
+
+/* ============================================================
+   LAKE SEARCH (NAME + COUNTY + STATE)
+   ============================================================ */
+document.getElementById("searchLakeBtn").addEventListener("click", async () => {
+    const name = document.getElementById("searchLakeName").value.trim();
+    const county = document.getElementById("searchCounty").value.trim();
+    const state = document.getElementById("searchState").value.trim();
+
+    const status = document.getElementById("lakeSearchStatus");
+    status.textContent = "Searching…";
+
+    if (!name) {
+        status.textContent = "Please enter a lake name.";
+        return;
+    }
+
+    // Build Overpass query
+    let areaFilters = "";
+    if (state) areaFilters += `area["name"="${state}"]["boundary"="administrative"];`;
+    if (county) areaFilters += `area["name"="${county}"]["boundary"="administrative"];`;
+
+    const query = `
+        [out:json][timeout:25];
+        ${areaFilters}
+        (
+            node["name"="${name}"];
+            way["name"="${name}"];
+            relation["name"="${name}"];
+        );
+        out center;
+    `;
+
+    try {
+        const res = await fetch("https://overpass-api.de/api/interpreter", {
             method: "POST",
-            body: overpassQuery
-          });
+            body: query
+        });
+        const data = await res.json();
 
-          const overpassData = await overpassResponse.json();
+        if (!data.elements || data.elements.length === 0) {
+            status.textContent = "Lake not found.";
+            return;
+        }
 
-          if (overpassData.elements && overpassData.elements.length > 0) {
-            overpassData.elements.sort((a, b) => {
-              const da = Math.hypot(a.center.lat - lat, a.center.lon - lng);
-              const db = Math.hypot(b.center.lat - lat, b.center.lon - lng);
-              return da - db;
+        // Use the first match
+        const el = data.elements[0];
+        const lat = el.lat || el.center.lat;
+        const lon = el.lon || el.center.lon;
+
+        document.getElementById("latInput").value = lat.toFixed(6);
+        document.getElementById("lonInput").value = lon.toFixed(6);
+
+        lakeNameResolved = name;
+
+        placeMarker(lat, lon);
+
+        // Fetch timezone
+        lakeTimezone = await fetchTimezone(lat, lon);
+
+        status.textContent = `Found: ${name}`;
+    } catch (err) {
+        console.error(err);
+        status.textContent = "Error searching lake.";
+    }
+});
+
+/* ============================================================
+   TIMEZONE LOOKUP (LAKE LOCAL TIME)
+   ============================================================ */
+async function fetchTimezone(lat, lon) {
+    try {
+        const url = `https://api.open-meteo.com/v1/timezone?latitude=${lat}&longitude=${lon}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        return data.timezone || "UTC";
+    } catch (err) {
+        console.error("Timezone lookup failed:", err);
+        return "UTC";
+    }
+}
+
+/* ============================================================
+   HYBRID SOLUNAR ENGINE
+   ============================================================ */
+
+/* ------------------------------
+   1. Basic Moon Phase Calculation
+   ------------------------------ */
+function moonPhase(date) {
+    const lp = 2551443; // lunar period in seconds
+    const new_moon = new Date("2000-01-06T18:14:00Z").getTime() / 1000;
+    const now = date.getTime() / 1000;
+    const phase = ((now - new_moon) % lp) / lp;
+    return phase; // 0=new, 0.5=full
+}
+
+/* ------------------------------
+   2. Sunrise/Sunset (Open-Meteo)
+   ------------------------------ */
+async function getSunTimes(lat, lon, dateStr, tz) {
+    const url = `https://api.open-meteo.com/v1/astronomy?latitude=${lat}&longitude=${lon}&timezone=${tz}&start_date=${dateStr}&end_date=${dateStr}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return {
+        sunrise: data.sunrise[0],
+        sunset: data.sunset[0]
+    };
+}
+
+/* ------------------------------
+   3. Moonrise/Moonset (Hybrid)
+   ------------------------------ */
+async function getMoonTimes(lat, lon, dateStr, tz) {
+    // Try high-precision API
+    try {
+        const url = `https://api.open-meteo.com/v1/astronomy?latitude=${lat}&longitude=${lon}&timezone=${tz}&start_date=${dateStr}&end_date=${dateStr}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        return {
+            moonrise: data.moonrise[0],
+            moonset: data.moonset[0]
+        };
+    } catch (err) {
+        console.warn("Moonrise API failed, using fallback.");
+
+        // Fallback: approximate times
+        return {
+            moonrise: "06:00",
+            moonset: "18:00"
+        };
+    }
+}
+
+/* ------------------------------
+   4. Solunar Strength (0–1)
+   ------------------------------ */
+function solunarStrength(hour, sunrise, sunset, moonPhaseValue) {
+    const h = parseInt(hour.split(":")[0]);
+
+    let score = 0.2; // base
+
+    // Sunrise / sunset boost
+    const sunriseHour = parseInt(sunrise.split(":")[0]);
+    const sunsetHour = parseInt(sunset.split(":")[0]);
+
+    if (Math.abs(h - sunriseHour) <= 1) score += 0.3;
+    if (Math.abs(h - sunsetHour) <= 1) score += 0.3;
+
+    // Moon phase boost (full/new)
+    if (moonPhaseValue < 0.1 || moonPhaseValue > 0.9) score += 0.2;
+    if (Math.abs(moonPhaseValue - 0.5) < 0.1) score += 0.1;
+
+    return Math.min(score, 1);
+}
+</script>
+<script>
+/* ============================================================
+   WEATHER FETCH (OPEN-METEO)
+   ============================================================ */
+async function fetchWeather(lat, lon, startDate, endDate, tz) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&hourly=temperature_2m,precipitation_probability,cloudcover,pressure_msl,windspeed_10m` +
+        `&timezone=${encodeURIComponent(tz)}&start_date=${startDate}&end_date=${endDate}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    return data.hourly;
+}
+
+/* ============================================================
+   SPECIES-SPECIFIC BEHAVIOR WEIGHTS
+   ============================================================ */
+function speciesWeight(species, hour) {
+    const h = parseInt(hour.split(":")[0]);
+
+    switch (species) {
+        case "Walleye":
+            return (h < 7 || h > 19) ? 1.2 : 0.8; // low light
+        case "Largemouth Bass":
+        case "Smallmouth Bass":
+            return (h >= 6 && h <= 11) || (h >= 17 && h <= 20) ? 1.2 : 0.9;
+        case "Rainbow Trout":
+        case "Brown Trout":
+            return (h < 10 || h > 17) ? 1.1 : 0.9;
+        case "Northern Pike":
+        case "Muskellunge":
+            return (h >= 10 && h <= 16) ? 1.2 : 1.0;
+        case "Catfish":
+            return (h < 6 || h > 20) ? 1.3 : 0.7;
+        default:
+            return 1.0;
+    }
+}
+
+/* ============================================================
+   WEATHER SUITABILITY SCORE (0–1)
+   ============================================================ */
+function weatherScore(temp, wind, clouds, precip, pressureTrend) {
+    let score = 0.3;
+
+    // Temperature sweet spot
+    if (temp >= 50 && temp <= 75) score += 0.3;
+
+    // Wind chop
+    if (wind >= 5 && wind <= 15) score += 0.2;
+
+    // Cloud cover
+    if (clouds >= 40 && clouds <= 90) score += 0.2;
+
+    // Light rain is good, heavy rain bad
+    if (precip > 0 && precip <= 40) score += 0.1;
+    if (precip > 40) score -= 0.2;
+
+    // Pressure trend
+    if (pressureTrend < 0) score += 0.2; // falling pressure
+    if (pressureTrend > 0.5) score -= 0.1; // rising sharply
+
+    return Math.min(Math.max(score, 0), 1);
+}
+
+/* ============================================================
+   PRESSURE TREND CALCULATION
+   ============================================================ */
+function computePressureTrend(pressures, index) {
+    if (index === 0) return 0;
+    return pressures[index] - pressures[index - 1];
+}
+
+/* ============================================================
+   MAIN FORECAST BUTTON HANDLER
+   ============================================================ */
+document.getElementById("forecastBtn").addEventListener("click", async () => {
+    const lat = parseFloat(document.getElementById("latInput").value);
+    const lon = parseFloat(document.getElementById("lonInput").value);
+    const species = document.getElementById("speciesSelect").value;
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+
+    if (!lat || !lon || !species || !startDate || !endDate) {
+        alert("Please fill all fields.");
+        return;
+    }
+
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("forecastOutput").innerHTML = "";
+
+    // Ensure timezone is loaded
+    if (!lakeTimezone) {
+        lakeTimezone = await fetchTimezone(lat, lon);
+    }
+
+    // Fetch weather
+    const weather = await fetchWeather(lat, lon, startDate, endDate, lakeTimezone);
+
+    // Build forecast by day
+    const output = document.getElementById("forecastOutput");
+
+    const dates = {};
+    for (let i = 0; i < weather.time.length; i++) {
+        const dt = weather.time[i];
+        const [dateStr, hourStr] = dt.split("T");
+
+        if (!dates[dateStr]) dates[dateStr] = [];
+        dates[dateStr].push({
+            hour: hourStr,
+            temp: weather.temperature_2m[i],
+            wind: weather.windspeed_10m[i],
+            clouds: weather.cloudcover[i],
+            precip: weather.precipitation_probability[i],
+            pressure: weather.pressure_msl[i]
+        });
+    }
+
+    // Process each day
+    for (const dateStr of Object.keys(dates)) {
+        const dayData = dates[dateStr];
+
+        // Get solunar data
+        const sun = await getSunTimes(lat, lon, dateStr, lakeTimezone);
+        const moon = await getMoonTimes(lat, lon, dateStr, lakeTimezone);
+        const moonPhaseValue = moonPhase(new Date(dateStr));
+
+        // Compute hourly scores
+        const hourlyScores = [];
+        for (let i = 0; i < dayData.length; i++) {
+            const h = dayData[i];
+            const pressureTrend = computePressureTrend(dayData.map(x => x.pressure), i);
+
+            const sol = solunarStrength(h.hour, sun.sunrise, sun.sunset, moonPhaseValue);
+            const weatherS = weatherScore(h.temp, h.wind, h.clouds, h.precip, pressureTrend);
+            const speciesS = speciesWeight(species, h.hour);
+
+            const total = Math.round((sol * 0.4 + weatherS * 0.4 + speciesS * 0.2) * 100);
+
+            hourlyScores.push({
+                hour: h.hour,
+                score: total,
+                temp: h.temp,
+                wind: h.wind,
+                clouds: h.clouds,
+                precip: h.precip
             });
+        }
 
-            const tags = overpassData.elements[0].tags;
-            if (tags) {
-              lakeName =
-                tags.name ||
-                tags["name:en"] ||
-                tags.alt_name ||
-                tags.short_name ||
-                null;
+        // Best 3-hour block
+        let bestBlock = { score: -1, start: "" };
+        for (let i = 0; i < hourlyScores.length - 2; i++) {
+            const avg = (hourlyScores[i].score +
+                         hourlyScores[i+1].score +
+                         hourlyScores[i+2].score) / 3;
+            if (avg > bestBlock.score) {
+                bestBlock = {
+                    score: Math.round(avg),
+                    start: hourlyScores[i].hour
+                };
             }
-          }
-        } catch (err) {
-          console.error("Overpass error:", err);
         }
 
-        lakeNameInput.value = lakeName
-          ? lakeName
-          : `Unnamed waterbody at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        // Render day block
+        const dayBlock = document.createElement("div");
+        dayBlock.className = "day-block";
 
-        if (marker) map.removeLayer(marker);
-        marker = L.marker([lat, lng]).addTo(map);
-      });
-    </script>
+        const header = document.createElement("div");
+        header.className = "day-header";
+        header.textContent = `${dateStr} — Best 3-hour block starts at ${bestBlock.start} (${bestBlock.score}%)`;
 
-    <!-- FORECAST SCRIPT -->
-    <script>
-      document.getElementById("forecastForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
+        const content = document.createElement("div");
+        content.className = "day-content";
 
-        document.getElementById("loading").style.display = "block";
-        document.getElementById("result").innerHTML = "";
+        const table = document.createElement("table");
+        table.innerHTML = `
+            <tr>
+                <th>Hour</th>
+                <th>Activity</th>
+                <th>Temp (°F)</th>
+                <th>Wind (mph)</th>
+                <th>Clouds (%)</th>
+                <th>Precip (%)</th>
+            </tr>
+        `;
 
-        const params = new URLSearchParams(new FormData(e.target));
-        const response = await fetch("/forecast?" + params.toString());
-        const data = await response.json();
-
-        document.getElementById("loading").style.display = "none";
-
-        if (data.error) {
-          document.getElementById("result").innerHTML =
-            `<p style="color:red;">${data.error}</p>`;
-          return;
-        }
-
-        let html = `<h3>${data.message}</h3>`;
-        html += `<table border="1" cellpadding="6" style="border-collapse: collapse; margin-top: 10px;">
-                  <tr style="background-color:#004080; color:white;">
-                    <th>Date</th>
-                    <th>Best Hours</th>
-                    <th>Activity Score</th>
-                  </tr>`;
-
-        data.reports.forEach(day => {
-          html += `<tr>
-                    <td>${day.date}</td>
-                    <td>${day.best_block}</td>
-                    <td>${day.activity}%</td>
-                  </tr>`;
+        hourlyScores.forEach(h => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${h.hour}</td>
+                <td>${h.score}%</td>
+                <td>${h.temp}</td>
+                <td>${h.wind}</td>
+                <td>${h.clouds}</td>
+                <td>${h.precip}</td>
+            `;
+            table.appendChild(row);
         });
 
-        html += `</table>`;
-        document.getElementById("result").innerHTML = html;
-      });
-    </script>
+        content.appendChild(table);
+
+        header.addEventListener("click", () => {
+            content.style.display = content.style.display === "none" ? "block" : "none";
+        });
+
+        dayBlock.appendChild(header);
+        dayBlock.appendChild(content);
+        output.appendChild(dayBlock);
+    }
+
+    document.getElementById("loading").style.display = "none";
+});
+</script>
 
 </body>
 </html>
