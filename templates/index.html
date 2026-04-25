@@ -4,43 +4,137 @@
     <meta charset="UTF-8">
     <title>Fishing Forecast</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f0f8ff; }
-        h1 { color: #004080; }
-        form { margin-top: 20px; }
-        label { display: block; margin: 10px 0 5px; }
-        input { padding: 6px; width: 250px; }
-        button { margin-top: 15px; padding: 8px 16px; background-color: #004080; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: #0066cc; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 40px; 
+            background-color: #f0f8ff; 
+        }
+        h1 { 
+            color: #004080; 
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #333;
+            margin-top: 0;
+            font-size: 0.95em;
+        }
+        form { 
+            margin-top: 20px; 
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        label { 
+            display: block; 
+            margin: 10px 0 5px; 
+            font-weight: bold;
+        }
+        input, select { 
+            padding: 6px; 
+            width: 260px; 
+            border: 1px solid #aaa;
+            border-radius: 4px;
+        }
+        button { 
+            margin-top: 15px; 
+            padding: 10px 18px; 
+            background-color: #004080; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        button:hover { 
+            background-color: #0066cc; 
+        }
+        #loading {
+            display: none;
+            margin-top: 10px;
+            color: #004080;
+            font-weight: bold;
+        }
+        #result {
+            margin-top: 25px;
+        }
     </style>
 </head>
 <body>
+
     <h1>Fishing Forecast</h1>
+    <p class="subtitle">Click a lake on the map or enter coordinates manually.</p>
 
     <form id="forecastForm" action="/forecast" method="get">
-        <label>Latitude (decimal degrees, e.g. 48.1101):</label>
+
+        <label>Latitude:</label>
         <input type="text" name="lat" required>
 
-        <label>Longitude (decimal degrees, e.g. -122.3389):</label>
+        <label>Longitude:</label>
         <input type="text" name="lon" required>
 
         <p style="font-size: 0.9em; color: #555;">
-            Click the map to automatically fill in coordinates, or enter your own (format: 48.1234, -122.5678).
+            Click the map to automatically fill in coordinates.
         </p>
 
-        <div id="map" style="height: 400px; margin-top: 10px;"></div>
+        <div id="map" style="height: 400px; margin-top: 10px; border-radius: 6px; overflow: hidden;"></div>
 
         <label>Lake Name:</label>
-        <input type="text" name="lake_name" placeholder="e.g., Silver Lake">
+        <input type="text" name="lake_name" placeholder="e.g., Lake Erie">
 
         <label>Species:</label>
         <select name="species" required>
             <option value="">Select species</option>
-            <option value="Trout">Trout</option>
-            <option value="Bass">Bass</option>
-            <option value="Salmon">Salmon</option>
-            <option value="Catfish">Catfish</option>
-            <option value="Pike">Pike</option>
+
+            <!-- Bass -->
+            <option value="Largemouth Bass">Largemouth Bass</option>
+            <option value="Smallmouth Bass">Smallmouth Bass</option>
+            <option value="Spotted Bass">Spotted Bass</option>
+            <option value="Striped Bass">Striped Bass</option>
+            <option value="White Bass">White Bass</option>
+
+            <!-- Walleye / Pike / Muskie -->
+            <option value="Walleye">Walleye</option>
+            <option value="Sauger">Sauger</option>
+            <option value="Northern Pike">Northern Pike</option>
+            <option value="Muskellunge">Muskellunge</option>
+            <option value="Tiger Muskie">Tiger Muskie</option>
+
+            <!-- Trout & Salmon -->
+            <option value="Rainbow Trout">Rainbow Trout</option>
+            <option value="Brown Trout">Brown Trout</option>
+            <option value="Brook Trout">Brook Trout</option>
+            <option value="Cutthroat Trout">Cutthroat Trout</option>
+            <option value="Lake Trout">Lake Trout</option>
+            <option value="Kokanee Salmon">Kokanee Salmon</option>
+            <option value="Chinook Salmon">Chinook Salmon</option>
+            <option value="Coho Salmon">Coho Salmon</option>
+            <option value="Sockeye Salmon">Sockeye Salmon</option>
+            <option value="Pink Salmon">Pink Salmon</option>
+            <option value="Chum Salmon">Chum Salmon</option>
+
+            <!-- Panfish -->
+            <option value="Bluegill">Bluegill</option>
+            <option value="Pumpkinseed">Pumpkinseed</option>
+            <option value="Green Sunfish">Green Sunfish</option>
+            <option value="Redear Sunfish">Redear Sunfish</option>
+            <option value="Crappie">Crappie</option>
+            <option value="Yellow Perch">Yellow Perch</option>
+
+            <!-- Catfish -->
+            <option value="Channel Catfish">Channel Catfish</option>
+            <option value="Blue Catfish">Blue Catfish</option>
+            <option value="Flathead Catfish">Flathead Catfish</option>
+            <option value="Bullhead">Bullhead</option>
+
+            <!-- Other -->
             <option value="Carp">Carp</option>
+            <option value="Buffalo">Buffalo</option>
+            <option value="Bowfin">Bowfin</option>
+            <option value="Gar">Gar</option>
+            <option value="Whitefish">Whitefish</option>
+            <option value="Burbot">Burbot</option>
+            <option value="Shad">Shad</option>
         </select>
 
         <label>Start Date:</label>
@@ -50,11 +144,13 @@
         <input type="date" name="end_date" required>
 
         <button type="submit">Get Forecast</button>
+
+        <div id="loading">Loading forecast…</div>
     </form>
 
     <div id="result"></div>
 
-    <!-- Leaflet Map Script -->
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -70,11 +166,9 @@
       map.on('click', async function(e) {
         const { lat, lng } = e.latlng;
 
-        // Fill coordinates
         document.querySelector('[name="lat"]').value = lat.toFixed(4);
         document.querySelector('[name="lon"]').value = lng.toFixed(4);
 
-        // Auto-name the lake
         const lakeNameInput = document.querySelector('[name="lake_name"]');
         lakeNameInput.value = "Searching…";
 
@@ -103,3 +197,78 @@
             body: overpassQuery
           });
 
+          const overpassData = await overpassResponse.json();
+
+          if (overpassData.elements && overpassData.elements.length > 0) {
+            overpassData.elements.sort((a, b) => {
+              const da = Math.hypot(a.center.lat - lat, a.center.lon - lng);
+              const db = Math.hypot(b.center.lat - lat, b.center.lon - lng);
+              return da - db;
+            });
+
+            const tags = overpassData.elements[0].tags;
+            if (tags) {
+              lakeName =
+                tags.name ||
+                tags["name:en"] ||
+                tags.alt_name ||
+                tags.short_name ||
+                null;
+            }
+          }
+        } catch (err) {
+          console.error("Overpass error:", err);
+        }
+
+        lakeNameInput.value = lakeName
+          ? lakeName
+          : `Unnamed waterbody at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng]).addTo(map);
+      });
+    </script>
+
+    <!-- FORECAST SCRIPT -->
+    <script>
+      document.getElementById("forecastForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        document.getElementById("loading").style.display = "block";
+        document.getElementById("result").innerHTML = "";
+
+        const params = new URLSearchParams(new FormData(e.target));
+        const response = await fetch("/forecast?" + params.toString());
+        const data = await response.json();
+
+        document.getElementById("loading").style.display = "none";
+
+        if (data.error) {
+          document.getElementById("result").innerHTML =
+            `<p style="color:red;">${data.error}</p>`;
+          return;
+        }
+
+        let html = `<h3>${data.message}</h3>`;
+        html += `<table border="1" cellpadding="6" style="border-collapse: collapse; margin-top: 10px;">
+                  <tr style="background-color:#004080; color:white;">
+                    <th>Date</th>
+                    <th>Best Hours</th>
+                    <th>Activity Score</th>
+                  </tr>`;
+
+        data.reports.forEach(day => {
+          html += `<tr>
+                    <td>${day.date}</td>
+                    <td>${day.best_block}</td>
+                    <td>${day.activity}%</td>
+                  </tr>`;
+        });
+
+        html += `</table>`;
+        document.getElementById("result").innerHTML = html;
+      });
+    </script>
+
+</body>
+</html>
