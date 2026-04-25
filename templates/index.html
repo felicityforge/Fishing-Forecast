@@ -52,8 +52,10 @@ Click the map to automatically fill in coordinates, or enter your own (format: 4
     </form>
     <div id="result"></div>
 
+<!-- Leaflet Map Script -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script>
   const map = L.map('map').setView([48.1101, -122.3389], 7);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -61,6 +63,45 @@ Click the map to automatically fill in coordinates, or enter your own (format: 4
   }).addTo(map);
 
   let marker;
+
+  map.on('click', async function(e) {
+    const { lat, lng } = e.latlng;
+
+    // Fill coordinates
+    document.querySelector('[name="lat"]').value = lat.toFixed(4);
+    document.querySelector('[name="lon"]').value = lng.toFixed(4);
+
+    // Auto-name the lake
+    const lakeNameInput = document.querySelector('[name="lake_name"]');
+    lakeNameInput.value = "Searching…";
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`
+      );
+      const data = await response.json();
+
+      let lakeName = null;
+      if (data && data.address) {
+        lakeName =
+          data.address.lake ||
+          data.address.water ||
+          data.address.reservoir ||
+          data.address.pond ||
+          data.address.river ||
+          data.address.stream ||
+          null;
+      }
+
+      lakeNameInput.value = lakeName
+        ? lakeName
+        : `Unnamed waterbody at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    } catch {
+      lakeNameInput.value = `Unnamed waterbody at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+
+    // Update marker
+    if (marker) map.removeLayer(marker);
     marker = L.marker([lat, lng]).addTo(map);
   });
 </script>
@@ -97,6 +138,5 @@ Click the map to automatically fill in coordinates, or enter your own (format: 4
     document.getElementById("result").innerHTML = html;
   });
 </script>
-
 </body>
 </html>
