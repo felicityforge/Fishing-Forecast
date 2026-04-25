@@ -117,7 +117,42 @@ if (!lakeName && data && data.address) {
   document.getElementById("forecastForm").addEventListener("submit", async (e) => {
     e.preventDefault(); // stop page reload
     const params = new URLSearchParams(new FormData(e.target));
-    const response = await fetch("/forecast?" + params.toString());
+    // Try reverse first, then fallback to nearby search
+let lakeName = null;
+try {
+  // Reverse lookup
+  const reverseResponse = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`
+  );
+  const reverseData = await reverseResponse.json();
+
+  // Check for direct name
+  if (reverseData.name) lakeName = reverseData.name;
+  if (!lakeName && reverseData.address) {
+    lakeName =
+      reverseData.address.lake ||
+      reverseData.address.water ||
+      reverseData.address.reservoir ||
+      reverseData.address.pond ||
+      reverseData.address.river ||
+      reverseData.address.stream ||
+      null;
+  }
+
+  // If still no name, search nearby water features
+  if (!lakeName) {
+    const searchResponse = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=lake&bounded=1&limit=1&viewbox=${lng-0.01},${lat+0.01},${lng+0.01},${lat-0.01}`
+    );
+    const searchData = await searchResponse.json();
+    if (searchData.length > 0 && searchData[0].display_name) {
+      lakeName = searchData[0].display_name.split(',')[0];
+    }
+  }
+} catch {
+  lakeName = null;
+}
+
     const data = await response.json();
 
     if (data.error) {
