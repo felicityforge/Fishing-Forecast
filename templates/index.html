@@ -82,16 +82,23 @@ Click the map to automatically fill in coordinates, or enter your own (format: 4
       const data = await response.json();
 
       let lakeName = null;
-      if (data && data.address) {
-        lakeName =
-          data.address.lake ||
-          data.address.water ||
-          data.address.reservoir ||
-          data.address.pond ||
-          data.address.river ||
-          data.address.stream ||
-          null;
-      }
+
+// 1. Try the main "name" field (most reliable)
+if (data && data.name) {
+  lakeName = data.name;
+}
+
+// 2. Try waterbody-specific fields
+if (!lakeName && data && data.address) {
+  lakeName =
+    data.address.lake ||
+    data.address.water ||
+    data.address.reservoir ||
+    data.address.pond ||
+    data.address.river ||
+    data.address.stream ||
+    null;
+}
 
       lakeNameInput.value = lakeName
         ? lakeName
