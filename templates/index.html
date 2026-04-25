@@ -121,44 +121,42 @@ if (!lakeName && data && data.address) {
 let lakeName = null;
 try {
   // Reverse lookup
-  const reverseResponse = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`
-  );
-  const reverseData = await reverseResponse.json();
+  let lakeName = null;
 
-  // Check for direct name
-  if (reverseData.name) lakeName = reverseData.name;
-  if (!lakeName && reverseData.address) {
-    lakeName =
-      reverseData.address.lake ||
-      reverseData.address.water ||
-      reverseData.address.reservoir ||
-      reverseData.address.pond ||
-      reverseData.address.river ||
-      reverseData.address.stream ||
-      null;
-  }
-
-  // If still no name, search nearby water features
-  if (!lakeName) {
-    const searchResponse = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=lake&bounded=1&limit=1&viewbox=${lng-0.01},${lat+0.01},${lng+0.01},${lat-0.01}`
+try {
+  const overpassQuery = `
+    [out:json];
+    (
+      way["natural"="water"](around:500, ${lat}, ${lng});
+      relation["natural"="water"](around:500, ${lat}, ${lng});
+      way["water"="lake"](around:500, ${lat}, ${lng});
+      relation["water"="lake"](around:500, ${lat}, ${lng});
     );
-    const searchData = await searchResponse.json();
-    if (searchData.length > 0 && searchData[0].display_name) {
-      lakeName = searchData[0].display_name.split(',')[0];
+    out tags center;
+  `;
+
+  const overpassResponse = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST",
+    body: overpassQuery
+  });
+
+  const overpassData = await overpassResponse.json();
+
+  if (overpassData.elements && overpassData.elements.length > 0) {
+    const tags = overpassData.elements[0].tags;
+    if (tags && tags.name) {
+      lakeName = tags.name;
     }
   }
-} catch {
-  lakeName = null;
+} catch (err) {
+  console.error("Overpass error:", err);
 }
 
-    const data = await response.json();
+// Fallback
+lakeNameInput.value = lakeName
+  ? lakeName
+  : `Unnamed waterbody at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-    if (data.error) {
-      document.getElementById("result").innerHTML = `<p style="color:red;">${data.error}</p>`;
-      return;
-    }
 
     let html = `<h3>${data.message}</h3>`;
     html += `<table border="1" cellpadding="6" style="border-collapse: collapse; margin-top: 10px;">
